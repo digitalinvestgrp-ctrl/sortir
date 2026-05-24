@@ -1,6 +1,10 @@
 # Trouvetateam — front controller PHP natif sur OVH mutualise
 # IMPORTANT : pas de directive php_flag (interdit OVH mutu, leve 500)
 
+# Servir la landing HTML statique en priorite sur index.php
+# GET / -> public/index.html (200), API non touchee
+DirectoryIndex index.html index.php
+
 RewriteEngine On
 
 # Securite : protege .env, .git, logs, vendor en racine du repo

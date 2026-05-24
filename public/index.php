@@ -16,6 +16,21 @@ use App\Core\Response;
 // Init application (PDO, config, autoload, error handler)
 \App\Core\Bootstrap::init();
 
+// Landing publique : si on tape /, /index.html ou /accueil, on sert la landing
+// statique avant le dispatch API. Garantit que le visiteur ne tombe jamais
+// sur un JSON 404 a la racine, meme si .htaccess DirectoryIndex est inactif.
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
+    && in_array($requestPath, ['/', '/index.html', '/accueil'], true)) {
+    $landing = __DIR__ . '/index.html';
+    if (is_file($landing)) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: public, max-age=300');
+        readfile($landing);
+        return;
+    }
+}
+
 $router = new Router();
 
 // --- Health (libre) ---
