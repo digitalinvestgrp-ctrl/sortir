@@ -31,6 +31,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
     }
 }
 
+// Pages publiques /sorties et /membres (extension-less, rendues par sorties.php / membres.php)
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
+    && in_array($requestPath, ['/sorties', '/membres'], true)) {
+    $page = __DIR__ . $requestPath . '.php';
+    if (is_file($page)) {
+        require $page;
+        return;
+    }
+}
+
 $router = new Router();
 
 // --- Health (libre) ---
