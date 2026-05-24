@@ -1,0 +1,31 @@
+# Trouvetateam — front controller PHP natif sur OVH mutualise
+# IMPORTANT : pas de directive php_flag (interdit OVH mutu, leve 500)
+
+RewriteEngine On
+
+# Securite : protege .env, .git, logs, vendor en racine du repo
+RewriteRule ^\.env$ - [F,L]
+RewriteRule ^\.git - [F,L]
+
+# Route /api/* vers public/index.php (router central)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L,QSA]
+
+# Securite : headers basiques
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# CORS : API publique sur certains endpoints, on autorise lecture cross-origin
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+</IfModule>
+
+# OPTIONS preflight
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]

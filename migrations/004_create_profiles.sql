@@ -1,0 +1,16 @@
+-- Migration 004 : profiles (1-1 avec users)
+
+CREATE TABLE IF NOT EXISTS profiles (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+  neighborhood_id BIGINT UNSIGNED NULL,
+  display_name VARCHAR(120) NOT NULL,
+  bio TEXT NULL,
+  avatar_url VARCHAR(500) NULL,
+  reputation_score INT NOT NULL DEFAULT 0,
+  attended_count INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_profiles_neighborhood FOREIGN KEY (neighborhood_id) REFERENCES neighborhoods(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

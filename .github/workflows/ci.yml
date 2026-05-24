@@ -1,0 +1,81 @@
+name: CI Trouvetateam
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_root
+          MYSQL_DATABASE: trouvetateam_test
+          MYSQL_USER: trouvetateam
+          MYSQL_PASSWORD: test_pwd
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -ptest_root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, pdo_mysql, json, curl
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            mysql -h 127.0.0.1 -u trouvetateam -ptest_pwd trouvetateam_test -e "SELECT 1" && break
+            sleep 2
+          done
+
+      - name: Run migrations
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: trouvetateam
+          DB_PASS: test_pwd
+          DB_NAME: trouvetateam_test
+        run: |
+          php -r '
+            require __DIR__ . "/src/Core/Bootstrap.php";
+            \App\Core\Bootstrap::init();
+            $pdo = \App\Core\Pdo::instance();
+            foreach (glob(__DIR__ . "/migrations/*.sql") as $f) {
+              echo "Applying " . basename($f) . "\n";
+              $sql = file_get_contents($f);
+              foreach (array_filter(array_map("trim", preg_split("/;\s*(?:\r?\n|$)/", $sql))) as $stmt) {
+                if ($stmt) $pdo->exec($stmt);
+              }
+            }
+          '
+
+      - name: Run phpunit
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: trouvetateam
+          DB_PASS: test_pwd
+          DB_NAME: trouvetateam_test
+        run: vendor/bin/phpunit --testdox
