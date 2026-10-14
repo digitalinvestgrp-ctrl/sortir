@@ -25,7 +25,7 @@ from pathlib import Path
 # ----- Config -----
 FTP_HOST = "ftp.cluster030.hosting.ovh.net"
 FTP_USER = "cijufrg"
-FTP_PASS = "170289aB"
+FTP_PASS = os.environ.get("TTT_FTP_PASS", "")  # jamais de secret en clair : fournir via variable d env
 REMOTE_ROOT = "/ttt"
 
 LOCAL_ROOT = Path(__file__).resolve().parent
@@ -100,6 +100,26 @@ def deploy(dry: bool = False, only: str = None):
         ftp.cwd(REMOTE_ROOT)
 
     dirs_to_deploy = [only] if only else INCLUDED_DIRS
+
+    # Upload fichiers racine specifiques (.htaccess root + .env)
+    if not only:
+        root_htaccess = LOCAL_ROOT / ".htaccess"
+        if root_htaccess.is_file():
+            try:
+                upload_file(ftp, root_htaccess, f"{REMOTE_ROOT}/.htaccess", dry)
+            except Exception as e:
+                print(f"  ERROR uploading .htaccess root: {e}")
+        env_prod = LOCAL_ROOT / ".env.production"
+        if env_prod.is_file():
+            try:
+                if dry:
+                    print(f"  DRY upload : {env_prod} -> {REMOTE_ROOT}/.env")
+                else:
+                    with open(env_prod, "rb") as f:
+                        ftp.storbinary(f"STOR {REMOTE_ROOT}/.env", f)
+                    print(f"  uploaded : {REMOTE_ROOT}/.env (from .env.production)")
+            except Exception as e:
+                print(f"  ERROR uploading .env: {e}")
 
     for d in dirs_to_deploy:
         local_dir = LOCAL_ROOT / d

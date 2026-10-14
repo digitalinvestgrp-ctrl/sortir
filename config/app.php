@@ -24,6 +24,17 @@ return [
         'charset' => 'utf8mb4',
     ],
 
+    'csrf_secret' => $_ENV['CSRF_SECRET'] ?? '',
+
+    'mail' => [
+        // Pas de SMTP paye (regle DIG). Les liens magiques partent en best-effort via mail()
+        // ET sont toujours journalises dans logs/outbox.jsonl (verifiable via /dev/mails?key=).
+        'from' => $_ENV['MAIL_FROM'] ?? 'no-reply@trouvetateam.fr',
+        // La page /dev/mails n'est accessible QUE si cette cle est fournie en query (?key=).
+        // Vide => page desactivee (404). Protege contre toute prise de compte via l'outbox.
+        'dev_key' => $_ENV['MAIL_DEV_KEY'] ?? '',
+    ],
+
     'sms' => [
         'driver' => $_ENV['SMS_DRIVER'] ?? 'log',
         'otp' => [

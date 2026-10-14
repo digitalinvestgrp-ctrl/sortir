@@ -1,0 +1,18 @@
+{
+  "name": "TrouveTaTeam — sorties sport & loisirs près de chez toi",
+  "short_name": "TrouveTaTeam",
+  "description": "Trouve ou organise des sorties sport et loisirs entre amis près de chez toi. Inscription en 1 clic.",
+  "lang": "fr-FR",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbf8f5",
+  "theme_color": "#ff5a36",
+  "categories": ["sports", "lifestyle", "social"],
+  "icons": [
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
+  ]
+}

@@ -16,12 +16,27 @@ use App\Core\Response;
 // Init application (PDO, config, autoload, error handler)
 \App\Core\Bootstrap::init();
 
-// Landing publique : si on tape /, /index.html ou /accueil, on sert la landing
-// statique avant le dispatch API. Garantit que le visiteur ne tombe jamais
-// sur un JSON 404 a la racine, meme si .htaccess DirectoryIndex est inactif.
+// Landing publique : / et /accueil sont rendus cote serveur par home.php (design Node,
+// liste des vraies sorties MySQL). Fallback : landing statique index.html si home.php absent.
+// /index.html reste servi statiquement (landing Node statique) par Apache / ce fallback.
+// Garantit que le visiteur ne tombe jamais sur un JSON 404 a la racine.
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
-    && in_array($requestPath, ['/', '/index.html', '/accueil'], true)) {
+    && in_array($requestPath, ['/', '/accueil'], true)) {
+    $home = __DIR__ . '/home.php';
+    if (is_file($home)) {
+        require $home;
+        return;
+    }
+    $landing = __DIR__ . '/index.html';
+    if (is_file($landing)) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: public, max-age=300');
+        readfile($landing);
+        return;
+    }
+}
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $requestPath === '/index.html') {
     $landing = __DIR__ . '/index.html';
     if (is_file($landing)) {
         header('Content-Type: text/html; charset=utf-8');
@@ -39,6 +54,37 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
         require $page;
         return;
     }
+}
+
+// --- Pages applicatives rendues cote serveur (auth, sorties interactives, compte) ---
+// Ces pages gerent elles-memes GET et POST (formulaires + CSRF). Mapping chemin -> fichier.
+$ttt_pages = [
+    '/connexion' => 'connexion.php',
+    '/auth/magic' => 'auth_magic.php',
+    '/deconnexion' => 'deconnexion.php',
+    '/compte' => 'compte.php',
+    '/creer' => 'creer.php',
+    '/dev/mails' => 'dev_mails.php',
+];
+if (isset($ttt_pages[$requestPath])) {
+    $page = __DIR__ . '/' . $ttt_pages[$requestPath];
+    if (is_file($page)) {
+        require $page;
+        return;
+    }
+}
+// /sortie/{id}/modifier (avant /sortie/{id})
+if (preg_match('#^/sortie/(\d+)/modifier$#', $requestPath, $m)) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/modifier.php';
+    return;
+}
+// /sortie/{id} (fichier nomme sortie_detail.php pour eviter la collision MultiViews
+// entre l'URL /sortie/{id} et un fichier public/sortie.php)
+if (preg_match('#^/sortie/(\d+)$#', $requestPath, $m)) {
+    $_GET['id'] = $m[1];
+    require __DIR__ . '/sortie_detail.php';
+    return;
 }
 
 $router = new Router();

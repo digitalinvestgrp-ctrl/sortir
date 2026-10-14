@@ -1,0 +1,26 @@
+# Trouvetateam — .htaccess racine /ttt/
+# Si OVH multisite pointe deja /ttt/public/, ce fichier est ignore (sain)
+# Si multisite pointe /ttt/, ce fichier rewrite tout vers /public/
+# Pattern Agendia/Macolonie
+
+RewriteEngine On
+
+# --- Canonicalisation d'hote (fix session multi-hote 2026-10) ---
+# apex -> www par domaine (fr->www.fr, com->www.com), https force.
+RewriteCond %{HTTP_HOST} ^trouvetateam\.(fr|com)$ [NC]
+RewriteRule ^(.*)$ https://www.trouvetateam.%1/$1 [R=301,L]
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP_HOST} ^www\.trouvetateam\.(fr|com)$ [NC]
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# Securite : bloque acces direct aux fichiers sensibles
+RewriteRule ^\.env$ - [F,L]
+RewriteRule ^\.env\..*$ - [F,L]
+RewriteRule ^\.git - [F,L]
+RewriteRule ^composer\.(json|lock)$ - [F,L]
+RewriteRule ^\.htaccess$ - [F,L]
+
+# Rewrite racine vers public/ si la requete ne commence pas deja par public/
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ public/$1 [L]

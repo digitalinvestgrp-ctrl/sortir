@@ -1,11 +1,23 @@
 # Trouvetateam — front controller PHP natif sur OVH mutualise
 # IMPORTANT : pas de directive php_flag (interdit OVH mutu, leve 500)
 
-# Servir la landing HTML statique en priorite sur index.php
-# GET / -> public/index.html (200), API non touchee
-DirectoryIndex index.html index.php
+# Accueil rendu cote serveur : GET / -> index.php -> home.php (design Node, vraies sorties).
+# index.html reste en fallback statique si index.php/home.php indisponibles.
+DirectoryIndex index.php index.html
 
 RewriteEngine On
+
+# --- Canonicalisation d'hote (fix session multi-hote 2026-10, Mehdi Benali) ---
+# Le site repond sur 4 hotes (fr/com x apex/www). Sans canonicalisation, les cookies
+# host-only changent d'hote et la session saute. On redirige l'apex vers www PAR domaine
+# (fr->www.fr, com->www.com : les deux domaines restent independants) et on force https.
+RewriteCond %{HTTP_HOST} ^trouvetateam\.(fr|com)$ [NC]
+RewriteRule ^(.*)$ https://www.trouvetateam.%1/$1 [R=301,L]
+# Force https sur www uniquement si vraiment en clair (garde-fou anti-boucle derriere proxy TLS)
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP_HOST} ^www\.trouvetateam\.(fr|com)$ [NC]
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 
 # Securite : protege .env, .git, logs, vendor en racine du repo
 RewriteRule ^\.env$ - [F,L]
